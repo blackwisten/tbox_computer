@@ -1,0 +1,26 @@
+[
+  {
+    "name": "金士顿 FURY Beast DDR4 3200",
+    "type": "DDR4",
+    "capacity": 16,
+    "frequency": 3200,
+    "modules": "2x8GB",
+    "price": 400
+  },
+  {
+    "name": "海盗船 Vengeance LPX DDR4 3600",
+    "type": "DDR4",
+    "capacity": 32,
+    "frequency": 3600,
+    "modules": "2x16GB",
+    "price": 800
+  },
+  {
+    "name": "芝奇 Trident Z5 DDR5 5600",
+    "type": "DDR5",
+    "capacity": 32,
+    "frequency": 5600,
+    "modules": "2x16GB",
+    "price": 1200
+  }
+]

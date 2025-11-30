@@ -1,0 +1,79 @@
+测试改进后的功能...
+
+=== 生成测试配置 ===
+生成的配置: {
+  "configuration": {
+    "cpu": {
+      "name": "Intel Pentium G640",
+      "price": 19,
+      "reason": "根据游戏需求和高端配置级别推荐",
+      "link": "https://s.taobao.com/search?q=Intel Pentium G640 CPU处理器"
+    },
+    "motherboard": {
+      "name": "ASRock H81 Pro BTC",
+      "price": 44.98,
+      "reason": "与所选CPU兼容，符合高端配置要求",
+      "link": "https://s.taobao.com/search?q=ASRock H81 Pro BTC 主板"
+    },
+    "memory": {
+      "name": "Crucial CT51264BA160B 4 GB",
+      "price": 10.29,
+      "reason": "满足游戏需求，容量和速度适中",
+      "link": "https://s.taobao.com/search?q=Crucial CT51264BA160B 4 GB 内存条"
+    },
+    "video_card": {
+      "name": "VisionTek 901491",
+      "price": 62.99,
+      "reason": "根据游戏用途推荐，性能与预算匹配",
+      "link": "https://s.taobao.com/search?q=VisionTek 901491 显卡"
+    }
+  },
+  "total_price": 137.26,
+  "compatibility_score": 100.0,
+  "recommendation": "这是一套高端配置，适合游戏使用。总价格约为¥137.26。"
+}
+
+=== 测试兼容性检查功能 ===
+兼容性检查结果: {
+  "compatible": true,
+  "issues": [],
+  "warnings": []
+}
+
+=== 测试性能预估功能 ===
+性能预估结果: {
+  "performance_scores": {
+    "办公软件": {
+      "score": 11,
+      "recommendation": "卡顿"
+    },
+    "网页浏览": {
+      "score": 11,
+      "recommendation": "卡顿"
+    },
+    "1080p游戏": {
+      "score": 12,
+      "recommendation": "卡顿"
+    },
+    "1440p游戏": {
+      "score": 10,
+      "recommendation": "卡顿"
+    },
+    "4k游戏": {
+      "score": 7,
+      "recommendation": "卡顿"
+    },
+    "视频编辑": {
+      "score": 11,
+      "recommendation": "卡顿"
+    }
+  },
+  "overall_rating": 10
+}
+
+=== 测试配置总价计算 ===
+cpu: ¥19
+motherboard: ¥44.98
+memory: ¥10.29
+video_card: ¥62.99
+配置总价: ¥137.26

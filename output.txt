@@ -1,0 +1,79 @@
+测试改进后的功能...
+
+=== 生成测试配置 ===
+生成的配置: {
+  "configuration": {
+    "cpu": {
+      "name": "Intel Xeon E3-1220 V6",
+      "price": 25,
+      "reason": "根据游戏需求和高端配置级别推荐",
+      "link": "https://s.taobao.com/search?q=Intel Xeon E3 1220 V6 CPU处理器"
+    },
+    "motherboard": {
+      "name": "ASRock G41M-S",
+      "price": 57.7,
+      "reason": "与所选CPU兼容，符合高端配置要求",
+      "link": "https://s.taobao.com/search?q=ASRock G41M S 主板"
+    },
+    "memory": {
+      "name": "Samsung M471B5273DH0-CK0 4 GB",
+      "price": 10.25,
+      "reason": "满足游戏需求，容量和速度适中",
+      "link": "https://s.taobao.com/search?q=Samsung M471B5273DH0 CK0 4 GB 内存条"
+    },
+    "video_card": {
+      "name": "PNY VCQP600-PB",
+      "price": 64.04,
+      "reason": "根据游戏用途推荐，性能与预算匹配",
+      "link": "https://s.taobao.com/search?q=PNY VCQP600 PB 显卡"
+    }
+  },
+  "total_price": 156.99,
+  "compatibility_score": 100.0,
+  "recommendation": "这是一套高端配置，适合游戏使用。总价格约为¥156.99。"
+}
+
+=== 测试兼容性检查功能 ===
+兼容性检查结果: {
+  "compatible": true,
+  "issues": [],
+  "warnings": []
+}
+
+=== 测试性能预估功能 ===
+性能预估结果: {
+  "performance_scores": {
+    "办公软件": {
+      "score": 11,
+      "recommendation": "卡顿"
+    },
+    "网页浏览": {
+      "score": 11,
+      "recommendation": "卡顿"
+    },
+    "1080p游戏": {
+      "score": 12,
+      "recommendation": "卡顿"
+    },
+    "1440p游戏": {
+      "score": 10,
+      "recommendation": "卡顿"
+    },
+    "4k游戏": {
+      "score": 7,
+      "recommendation": "卡顿"
+    },
+    "视频编辑": {
+      "score": 11,
+      "recommendation": "卡顿"
+    }
+  },
+  "overall_rating": 10
+}
+
+=== 测试配置总价计算 ===
+cpu: ¥25
+motherboard: ¥57.7
+memory: ¥10.25
+video_card: ¥64.04
+配置总价: ¥156.99

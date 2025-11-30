@@ -1,0 +1,26 @@
+[
+  {
+    "name": "华硕 TUF-RTX3060-O12G-GAMING",
+    "chipset": "GeForce RTX 3060",
+    "vram": 12,
+    "core_clock": 1320,
+    "boost_clock": 1780,
+    "price": 1800
+  },
+  {
+    "name": "微星 RTX 4070 VENTUS 2X BLACK OC",
+    "chipset": "GeForce RTX 4070",
+    "vram": 12,
+    "core_clock": 1920,
+    "boost_clock": 2475,
+    "price": 3200
+  },
+  {
+    "name": "华硕 TUF-RTX4080-O16G-GAMING",
+    "chipset": "GeForce RTX 4080",
+    "vram": 16,
+    "core_clock": 2210,
+    "boost_clock": 2510,
+    "price": 6500
+  }
+]

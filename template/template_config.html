@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算机配置推荐</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .config-section {
+            margin-bottom: 30px;
+        }
+        .config-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .config-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .config-reason {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .taobao-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #ff5000;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .taobao-link:hover {
+            background-color: #e54500;
+        }
+        .summary {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .total-price {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .recommendation {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #d5f5e3;
+            border-radius: 5px;
+        }
+        /* 教学模块样式 */
+        .tutorial-section {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+        }
+        .tutorial-step {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background-color: #3498db;
+            color: white;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 5px;
+        }
+        .tutorial-title {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ 计算机配置推荐</h1>
+        
+        <div class="summary">
+            <p><strong>预算:</strong> ¥{{ budget }}</p>
+            <p><strong>用途:</strong> {{ usage }}</p>
+            <p><strong>配置级别:</strong> {{ config_level }}</p>
+        </div>
+        
+        {% if configuration.error %}
+        <div class="config-item" style="background-color: #fadbd8;">
+            <div class="config-name">配置生成失败</div>
+            <div class="config-reason">{{ configuration.error }}</div>
+        </div>
+        {% else %}
+        <div class="config-section">
+            <h2>推荐配置</h2>
+            
+            <div class="config-item">
+                <div class="config-name">CPU: {{ configuration.cpu.name }}</div>
+                <div class="config-reason">推荐理由: {{ configuration.cpu.reason }}</div>
+                <a href="{{ configuration.cpu.link }}" class="taobao-link" target="_blank">在淘宝上查看</a>
+            </div>
+            
+            <div class="config-item">
+                <div class="config-name">主板: {{ configuration.motherboard.name }}</div>
+                <div class="config-reason">推荐理由: {{ configuration.motherboard.reason }}</div>
+                <a href="{{ configuration.motherboard.link }}" class="taobao-link" target="_blank">在淘宝上查看</a>
+            </div>
+            
+            <div class="config-item">
+                <div class="config-name">内存: {{ configuration.memory.name }}</div>
+                <div class="config-reason">推荐理由: {{ configuration.memory.reason }}</div>
+                <a href="{{ configuration.memory.link }}" class="taobao-link" target="_blank">在淘宝上查看</a>
+            </div>
+            
+            <div class="config-item">
+                <div class="config-name">显卡: {{ configuration.video_card.name }}</div>
+                <div class="config-reason">推荐理由: {{ configuration.video_card.reason }}</div>
+                <a href="{{ configuration.video_card.link }}" class="taobao-link" target="_blank">在淘宝上查看</a>
+            </div>
+            
+            <div class="config-item">
+                <div class="config-name">存储: {{ configuration.storage.name }}</div>
+                <div class="config-reason">推荐理由: {{ configuration.storage.reason }}</div>
+                <a href="{{ configuration.storage.link }}" class="taobao-link" target="_blank">在淘宝上查看</a>
+            </div>
+            
+            <div class="config-item">
+                <div class="config-name">电源: {{ configuration.power_supply.name }}</div>
+                <div class="config-reason">推荐理由: {{ configuration.power_supply.reason }}</div>
+                <a href="{{ configuration.power_supply.link }}" class="taobao-link" target="_blank">在淘宝上查看</a>
+            </div>
+            
+            <div class="config-item">
+                <div class="config-name">机箱: {{ configuration.case.name }}</div>
+                <div class="config-reason">推荐理由: {{ configuration.case.reason }}</div>
+                <a href="{{ configuration.case.link }}" class="taobao-link" target="_blank">在淘宝上查看</a>
+            </div>
+        </div>
+        
+        <div class="price-section">
+            <h2>价格分析</h2>
+            <p>总价: ¥{{ total_price }}</p>
+            <p>{{ recommendation }}</p>
+        </div>
+        
+        </div>
+        {% endif %}
+        
+        <div class="compatibility-section">
+            <h2>兼容性评分</h2>
+            {% if compatibility_score %}
+            <div class="score-bar" style="width: 100%; background-color: #ddd; border-radius: 5px; overflow: hidden;">
+                <div class="score-fill" style="--score-width: {{ compatibility_score }}; width: calc(var(--score-width) * 1%); background-color: #4CAF50; height: 30px; transition: width 0.5s;"></div>
+                <span class="score-text" style="position: relative; top: -25px; left: 10px; color: #000; font-weight: bold;">{{ compatibility_score }}/100</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="tutorial-section">
+            <h2>组装教学指导</h2>
+            <div class="step">
+                <h3>第一步：准备工作</h3>
+                <p>在开始组装之前，请确保您拥有所有必需的工具和配件，包括螺丝刀套装、防静电手环以及主板附带的铜柱等。</p>
+            </div>
+            
+            <div class="step">
+                <h3>第二步：安装CPU和内存</h3>
+                <p>打开主板上的CPU插槽，小心地将CPU按照方向标识放置好，注意不要用力按压。锁定CPU后，在相应插槽安装内存条直至听到咔哒声。</p>
+            </div>
+            
+            <div class="step">
+                <h3>第三步：安装主板</h3>
+                <p>将主板放入机箱内，对准螺丝孔位并使用铜柱固定。注意主板的I/O挡板需要先安装到机箱对应位置。</p>
+            </div>
+            
+            <div class="step">
+                <h3>第四步：安装电源和存储设备</h3>
+                <p>将电源装入机箱电源位并固定，然后安装固态硬盘或机械硬盘。连接对应的SATA数据线和电源线。</p>
+            </div>
+            
+            <div class="step">
+                <h3>第五步：安装显卡</h3>
+                <p>将显卡插入主板的PCI-E x16插槽中并拧紧固定螺丝。连接显卡所需的额外电源线（如有）。</p>
+            </div>
+            
+            <div class="step">
+                <h3>第六步：连接线缆</h3>
+                <p>连接主板电源线（24pin）、CPU供电线（4+4pin或8pin）、以及前面板跳线（Power SW、Reset SW、LED灯等）。</p>
+            </div>
+            
+            <div class="step">
+                <h3>第七步：最终检查</h3>
+                <p>仔细检查所有连接是否牢固，确保没有金属接触导致短路。首次开机前建议再次确认所有步骤已完成。</p>
+            </div>
+            
+            <div class="video-tutorial">
+                <h3>视频教程</h3>
+                <div class="video-container">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                            title="计算机组装教程" frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+    </div>
+</body>
+</html>

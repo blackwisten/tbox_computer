@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算机配置比较</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .taobao-link {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 3px 8px;
+            background-color: #ff5000;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+        .taobao-link:hover {
+            background-color: #e54500;
+        }
+        .summary {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ 计算机配置比较</h1>
+        
+        <div class="summary">
+            <p>本页面展示了不同预算和用途下的配置方案，方便您进行比较和选择。</p>
+        </div>
+        
+        <table>
+            <tr>
+                <th>配置项</th>
+                {% for config in configurations %}
+                <th>
+                    配置{{ config.id }}<br>
+                    <span style="font-weight: normal;">预算: ¥{{ config.budget }}, 用途: {{ config.usage }}</span>
+                </th>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td><strong>CPU</strong></td>
+                {% for config in configurations %}
+                <td>
+                    {% if config.configuration.configuration and config.configuration.configuration.cpu %}
+                        {{ config.configuration.configuration.cpu.name }}<br>
+                        {% if config.configuration.configuration.cpu.link %}
+                        <a href="{{ config.configuration.configuration.cpu.link }}" class="taobao-link" target="_blank">购买链接</a>
+                        {% endif %}
+                    {% else %}
+                        未生成配置
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td><strong>主板</strong></td>
+                {% for config in configurations %}
+                <td>
+                    {% if config.configuration.configuration and config.configuration.configuration.motherboard %}
+                        {{ config.configuration.configuration.motherboard.name }}<br>
+                        {% if config.configuration.configuration.motherboard.link %}
+                        <a href="{{ config.configuration.configuration.motherboard.link }}" class="taobao-link" target="_blank">购买链接</a>
+                        {% endif %}
+                    {% else %}
+                        未生成配置
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td><strong>内存</strong></td>
+                {% for config in configurations %}
+                <td>
+                    {% if config.configuration.configuration and config.configuration.configuration.memory %}
+                        {{ config.configuration.configuration.memory.name }}<br>
+                        {% if config.configuration.configuration.memory.link %}
+                        <a href="{{ config.configuration.configuration.memory.link }}" class="taobao-link" target="_blank">购买链接</a>
+                        {% endif %}
+                    {% else %}
+                        未生成配置
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td><strong>显卡</strong></td>
+                {% for config in configurations %}
+                <td>
+                    {% if config.configuration.configuration and config.configuration.configuration.video_card %}
+                        {{ config.configuration.configuration.video_card.name }}<br>
+                        {% if config.configuration.configuration.video_card.link %}
+                        <a href="{{ config.configuration.configuration.video_card.link }}" class="taobao-link" target="_blank">购买链接</a>
+                        {% endif %}
+                    {% else %}
+                        未生成配置
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
