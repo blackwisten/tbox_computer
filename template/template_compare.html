@@ -58,11 +58,25 @@
             border-radius: 5px;
             margin-top: 30px;
         }
+        .error-cell {
+            background-color: #fadbd8;
+            color: #c0392b;
+        }
+        .info-box {
+            background-color: #d5f5e3;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🖥️ 计算机配置比较</h1>
+        
+        <div class="info-box">
+            <p>共比较 {{ total_configs }} 个配置，生成耗时 {{ generation_time }} 秒</p>
+        </div>
         
         <div class="summary">
             <p>本页面展示了不同预算和用途下的配置方案，方便您进行比较和选择。</p>
@@ -81,8 +95,10 @@
             <tr>
                 <td><strong>CPU</strong></td>
                 {% for config in configurations %}
-                <td>
-                    {% if config.configuration.configuration and config.configuration.configuration.cpu %}
+                <td {% if config.configuration.error %}class="error-cell"{% endif %}>
+                    {% if config.configuration.error %}
+                        <span style="color: #c0392b;">错误: {{ config.configuration.error }}</span>
+                    {% elif config.configuration.configuration and config.configuration.configuration.cpu %}
                         {{ config.configuration.configuration.cpu.name }}<br>
                         {% if config.configuration.configuration.cpu.link %}
                         <a href="{{ config.configuration.configuration.cpu.link }}" class="taobao-link" target="_blank">购买链接</a>
@@ -96,8 +112,10 @@
             <tr>
                 <td><strong>主板</strong></td>
                 {% for config in configurations %}
-                <td>
-                    {% if config.configuration.configuration and config.configuration.configuration.motherboard %}
+                <td {% if config.configuration.error %}class="error-cell"{% endif %}>
+                    {% if config.configuration.error %}
+                        <span style="color: #c0392b;">错误: {{ config.configuration.error }}</span>
+                    {% elif config.configuration.configuration and config.configuration.configuration.motherboard %}
                         {{ config.configuration.configuration.motherboard.name }}<br>
                         {% if config.configuration.configuration.motherboard.link %}
                         <a href="{{ config.configuration.configuration.motherboard.link }}" class="taobao-link" target="_blank">购买链接</a>
@@ -111,8 +129,10 @@
             <tr>
                 <td><strong>内存</strong></td>
                 {% for config in configurations %}
-                <td>
-                    {% if config.configuration.configuration and config.configuration.configuration.memory %}
+                <td {% if config.configuration.error %}class="error-cell"{% endif %}>
+                    {% if config.configuration.error %}
+                        <span style="color: #c0392b;">错误: {{ config.configuration.error }}</span>
+                    {% elif config.configuration.configuration and config.configuration.configuration.memory %}
                         {{ config.configuration.configuration.memory.name }}<br>
                         {% if config.configuration.configuration.memory.link %}
                         <a href="{{ config.configuration.configuration.memory.link }}" class="taobao-link" target="_blank">购买链接</a>
@@ -126,14 +146,44 @@
             <tr>
                 <td><strong>显卡</strong></td>
                 {% for config in configurations %}
-                <td>
-                    {% if config.configuration.configuration and config.configuration.configuration.video_card %}
+                <td {% if config.configuration.error %}class="error-cell"{% endif %}>
+                    {% if config.configuration.error %}
+                        <span style="color: #c0392b;">错误: {{ config.configuration.error }}</span>
+                    {% elif config.configuration.configuration and config.configuration.configuration.video_card %}
                         {{ config.configuration.configuration.video_card.name }}<br>
                         {% if config.configuration.configuration.video_card.link %}
                         <a href="{{ config.configuration.configuration.video_card.link }}" class="taobao-link" target="_blank">购买链接</a>
                         {% endif %}
                     {% else %}
                         未生成配置
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td><strong>总价</strong></td>
+                {% for config in configurations %}
+                <td {% if config.configuration.error %}class="error-cell"{% endif %}>
+                    {% if config.configuration.error %}
+                        -
+                    {% elif config.configuration.total_price %}
+                        ¥{{ config.configuration.total_price }}
+                    {% else %}
+                        未知
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td><strong>推荐理由</strong></td>
+                {% for config in configurations %}
+                <td {% if config.configuration.error %}class="error-cell"{% endif %}>
+                    {% if config.configuration.error %}
+                        -
+                    {% elif config.configuration.recommendation %}
+                        {{ config.configuration.recommendation }}
+                    {% else %}
+                        无推荐理由
                     {% endif %}
                 </td>
                 {% endfor %}

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # 初始化MCP服务器
 mcp = FastMCP("tbox-computer-configurator 🖥️")
 
-@mcp.tool()
+@mcp.tool(name="generate_computer_config")
 async def generate_computer_config(
     budget: int = 5000,
     usage: str = "游戏",
@@ -79,7 +79,8 @@ async def generate_computer_config(
         
         # 设置Jinja2环境
         env = Environment(loader=FileSystemLoader('template'))
-        template = env.get_template(my_template_filename.split('/')[-1])  # 只使用文件名
+        template_name = my_template_filename.split('/')[-1]  # 只使用文件名
+        template = env.get_template(template_name)
         
         # 准备模板数据
         template_data = {
@@ -111,7 +112,7 @@ async def generate_computer_config(
         error_result = f"<html><body><h1>生成配置时出错</h1><p>{str(e)}</p></body></html>"
         return error_result
 
-@mcp.tool()
+@mcp.tool(name="get_hardware_info")
 def get_hardware_info(hardware_type: str, name: str) -> dict:
     """
     获取特定硬件的详细信息
@@ -124,12 +125,40 @@ def get_hardware_info(hardware_type: str, name: str) -> dict:
         硬件详细信息
     """
     try:
+        # 标准化硬件类型名称
+        hardware_type_mapping = {
+            "video_card": "video-card",
+            "video card": "video-card",
+            "videocard": "video-card",
+            "power_supply": "power-supply",
+            "power supply": "power-supply",
+            "powersupply": "power-supply"
+        }
+        
+        normalized_hardware_type = hardware_type_mapping.get(hardware_type, hardware_type)
+        
         # 构建文件路径
-        file_path = f"json/{hardware_type}.json"
+        file_path = f"json/{normalized_hardware_type}.json"
         
         # 检查文件是否存在
         if not os.path.exists(file_path):
-            return {"error": f"硬件类型 {hardware_type} 不存在"}
+            # 尝试其他可能的文件名
+            alternative_paths = [
+                f"json/{hardware_type}.json",
+                f"json/{hardware_type.replace('-', '_')}.json",
+                f"json/{hardware_type.replace('_', '-')}.json"
+            ]
+            
+            found = False
+            for alt_path in alternative_paths:
+                if os.path.exists(alt_path):
+                    file_path = alt_path
+                    found = True
+                    break
+            
+            if not found:
+                available_files = [f for f in os.listdir("json") if f.endswith(".json")]
+                return {"error": f"硬件类型 '{hardware_type}' 不存在。可用的硬件类型: {', '.join([f[:-5] for f in available_files])}"}
         
         # 读取JSON文件
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -140,11 +169,13 @@ def get_hardware_info(hardware_type: str, name: str) -> dict:
             if item.get('name') == name:
                 return item
         
-        return {"error": f"未找到名为 {name} 的 {hardware_type}"}
+        # 如果没找到，列出该类型的一些硬件作为参考
+        available_names = [item.get('name', 'Unknown') for item in hardware_data[:5]]
+        return {"error": f"未找到名为 '{name}' 的 '{hardware_type}'。该类型的部分硬件: {', '.join(available_names)}"}
     except Exception as e:
         return {"error": f"获取硬件信息时出错: {str(e)}"}
 
-@mcp.tool()
+@mcp.tool(name="get_assembly_tutorial")
 def get_assembly_tutorial() -> dict:
     """
     获取电脑组装教程
@@ -219,7 +250,7 @@ def get_assembly_tutorial() -> dict:
     
     return tutorial_data
 
-@mcp.tool()
+@mcp.tool(name="compare_configurations")
 async def compare_configurations(configurations: list) -> str:
     """
     比较多个配置方案
@@ -233,30 +264,116 @@ async def compare_configurations(configurations: list) -> str:
     try:
         # 导入需要的函数
         from computer_configurator import generate_computer_configuration
+        import asyncio
+        import time
         
-        # 生成各个配置
+        # 验证输入参数
+        if not isinstance(configurations, list):
+            try:
+                import json
+                configurations = json.loads(configurations)
+            except (json.JSONDecodeError, TypeError):
+                error_result = "<html><body><h1>配置比较时出错</h1><p>输入参数格式错误：配置必须是列表类型</p></body></html>"
+                return error_result
+        
+        # 限制最大配置数量以防止超时
+        if len(configurations) > 3:  # 进一步减少最大配置数量以避免超时
+            error_result = "<html><body><h1>配置比较</h1><p>为了保证响应速度，一次最多比较3个配置。</p></body></html>"
+            return error_result
+        
+        if len(configurations) == 0:
+            error_result = "<html><body><h1>配置比较</h1><p>未提供任何配置进行比较。</p></body></html>"
+            return error_result
+        
+        # 生成各个配置（逐个处理以更好地控制连接状态）
+        start_time = time.time()
         config_results = []
+        success_count = 0
+        failure_count = 0
+        
+        logger.info(f"开始比较 {len(configurations)} 个配置方案")
+        
         for i, config in enumerate(configurations):
-            budget = config.get("budget", 5000)
-            usage = config.get("usage", "游戏")
-            config_level = config.get("config_level", "中端")
-            
-            # 生成配置
-            configuration = generate_computer_configuration(budget, usage, config_level)
-            config_results.append({
-                "id": i+1,
-                "budget": budget,
-                "usage": usage,
-                "config_level": config_level,
-                "configuration": configuration
-            })
+            try:
+                # 确保config是字典类型
+                if not isinstance(config, dict):
+                    try:
+                        import json
+                        config = json.loads(config)
+                    except (json.JSONDecodeError, TypeError):
+                        config_results.append({
+                            "id": i+1,
+                            "budget": 0,
+                            "usage": "",
+                            "config_level": "",
+                            "configuration": {"error": "配置格式错误"}
+                        })
+                        failure_count += 1
+                        continue
+                
+                budget = config.get("budget", 5000)
+                usage = config.get("usage", "游戏")
+                config_level = config.get("config_level", "中端")
+                
+                logger.info(f"正在生成配置 {i+1}/{len(configurations)}: 预算={budget}, 用途={usage}, 级别={config_level}")
+                
+                # 生成配置
+                configuration = generate_computer_configuration(budget, usage, config_level)
+                
+                config_results.append({
+                    "id": i+1,
+                    "budget": budget,
+                    "usage": usage,
+                    "config_level": config_level,
+                    "configuration": configuration
+                })
+                
+                if "error" in configuration:
+                    logger.warning(f"配置 {i+1} 生成警告: {configuration['error']}")
+                    failure_count += 1
+                else:
+                    logger.info(f"配置 {i+1} 生成成功")
+                    success_count += 1
+                
+                # 短暂休眠以避免过于频繁的请求
+                await asyncio.sleep(0.5)
+            except Exception as e:
+                logger.error(f"处理配置 {i} 时发生异常: {str(e)}")
+                config_results.append({
+                    "id": i+1,
+                    "budget": config.get("budget", 5000) if isinstance(config, dict) else 5000,
+                    "usage": config.get("usage", "游戏") if isinstance(config, dict) else "游戏",
+                    "config_level": config.get("config_level", "中端") if isinstance(config, dict) else "中端",
+                    "configuration": {"error": f"处理配置时发生异常: {str(e)}"}
+                })
+                failure_count += 1
+        
+        # 过滤掉空结果
+        processed_results = [r for r in config_results if r is not None]
+        
+        elapsed_time = time.time() - start_time
+        logger.info(f"生成 {len(processed_results)} 个配置耗时 {elapsed_time:.2f} 秒")
         
         # 设置Jinja2环境
         env = Environment(loader=FileSystemLoader('template'))
         template = env.get_template('template_compare.html')
         
+        elapsed_time = time.time() - start_time
+        logger.info(f"生成 {len(configurations)} 个配置耗时 {elapsed_time:.2f} 秒 "
+                   f"(成功: {success_count}, 失败: {failure_count})")
+        
+        # 准备模板数据，包括处理时间信息和统计信息
+        template_data = {
+            "configurations": config_results,
+            "generation_time": round(elapsed_time, 2),
+            "total_configs": len(configurations),
+            "success_count": success_count,
+            "failure_count": failure_count,
+            "success_rate": round((success_count / len(configurations)) * 100, 1) if configurations else 0
+        }
+        
         # 渲染模板
-        result = template.render(configurations=config_results)
+        result = template.render(**template_data)
         
         # 确保输出目录存在
         os.makedirs('output', exist_ok=True)
@@ -268,13 +385,14 @@ async def compare_configurations(configurations: list) -> str:
         
         return result
     except Exception as e:
+        logger.error(f"配置比较时出错: {str(e)}", exc_info=True)
         error_result = f"<html><body><h1>配置比较时出错</h1><p>{str(e)}</p></body></html>"
         return error_result
 
-@mcp.tool()
-def check_compatibility(configuration: dict) -> dict:
+
+def _check_compatibility_internal(configuration: dict) -> dict:
     """
-    检查配置中硬件的兼容性
+    检查配置中硬件的兼容性的内部实现函数
     
     Args:
         configuration: 硬件配置字典
@@ -283,25 +401,81 @@ def check_compatibility(configuration: dict) -> dict:
         兼容性检查结果
     """
     try:
+        # 处理多种可能的数据结构
+        config_data = configuration
+        
+        # 如果传入的是包含"configuration"键的字典
+        if isinstance(configuration, dict) and "configuration" in configuration:
+            config_data = configuration["configuration"]
+        # 如果传入的是字符串，尝试解析为JSON
+        elif isinstance(configuration, str):
+            import json
+            try:
+                config_data = json.loads(configuration)
+                # 如果解析后的数据还包含"configuration"键
+                if isinstance(config_data, dict) and "configuration" in config_data:
+                    config_data = config_data["configuration"]
+            except (json.JSONDecodeError, TypeError):
+                return {
+                    "compatible": False,
+                    "issues": ["输入参数格式错误：无法解析配置数据"],
+                    "warnings": []
+                }
+        # 如果configuration参数本身就是None
+        elif configuration is None:
+            return {
+                "compatible": False,
+                "issues": ["输入参数为空"],
+                "warnings": []
+            }
+        
+        # 确保config_data是字典类型
+        if not isinstance(config_data, dict):
+            return {
+                "compatible": False,
+                "issues": ["输入参数格式错误：配置数据必须是字典类型"],
+                "warnings": []
+            }
+        
         issues = []
         warnings = []
         
         # 获取配置中的硬件信息
-        # 处理两种可能的数据结构
-        config_data = configuration.get("configuration", {})
-        if not config_data and isinstance(configuration, dict):
-            # 如果configuration就是配置数据本身
-            config_data = configuration
-        
         cpu = config_data.get("cpu", {})
         motherboard = config_data.get("motherboard", {})
         memory = config_data.get("memory", {})
         video_card = config_data.get("video_card", {})
         
-        # CPU与主板兼容性检查
-        cpu_name = cpu.get("name", "")
-        motherboard_socket = motherboard.get("socket", "")
+        # 如果硬件信息是字符串而不是字典，转换为字典格式
+        if isinstance(cpu, str):
+            cpu = {"name": cpu}
+        if isinstance(motherboard, str):
+            motherboard = {"name": motherboard}
+        if isinstance(memory, str):
+            memory = {"name": memory}
+        if isinstance(video_card, str):
+            video_card = {"name": video_card}
         
+        # CPU与主板兼容性检查
+        cpu_name = cpu.get("name", "") if isinstance(cpu, dict) else ""
+        motherboard_socket = motherboard.get("socket", "") if isinstance(motherboard, dict) else ""
+        
+        # 确保核心数、内存通道等是数值类型
+        cpu_cores = cpu.get("cores", 4) if isinstance(cpu, dict) else 4
+        motherboard_memory_channels = motherboard.get("memory_channels", 2) if isinstance(motherboard, dict) else 2
+        
+        # 转换为数值类型
+        if isinstance(cpu_cores, str):
+            try:
+                cpu_cores = int(cpu_cores)
+            except ValueError:
+                cpu_cores = 4
+        if isinstance(motherboard_memory_channels, str):
+            try:
+                motherboard_memory_channels = int(motherboard_memory_channels)
+            except ValueError:
+                motherboard_memory_channels = 2
+                
         # 简化的兼容性规则（实际应用中需要更复杂的规则）
         if "Intel" in cpu_name and "AMD" in motherboard_socket:
             issues.append("CPU与主板插槽不兼容：Intel CPU不能安装在AMD主板上")
@@ -309,12 +483,49 @@ def check_compatibility(configuration: dict) -> dict:
             issues.append("CPU与主板插槽不兼容：AMD CPU不能安装在Intel主板上")
         
         # 内存兼容性检查
-        memory_type = memory.get("type", "")
-        motherboard_memory_support = motherboard.get("memory_support", "")
+        memory_type = memory.get("type", "") if isinstance(memory, dict) else ""
+        motherboard_memory_support = motherboard.get("memory_support", "") if isinstance(motherboard, dict) else ""
         
+        # 检查内存容量和频率
+        memory_capacity = memory.get("capacity", 8) if isinstance(memory, dict) else 8
+        memory_frequency = memory.get("frequency", 3200) if isinstance(memory, dict) else 3200
+        motherboard_max_memory = motherboard.get("max_memory", 128) if isinstance(motherboard, dict) else 128
+        motherboard_max_frequency = motherboard.get("max_memory_frequency", 4800) if isinstance(motherboard, dict) else 4800
+        
+        # 转换为数值类型
+        if isinstance(memory_capacity, str):
+            try:
+                memory_capacity = int(memory_capacity)
+            except ValueError:
+                memory_capacity = 8
+        if isinstance(memory_frequency, str):
+            try:
+                memory_frequency = int(memory_frequency)
+            except ValueError:
+                memory_frequency = 3200
+        if isinstance(motherboard_max_memory, str):
+            try:
+                motherboard_max_memory = int(motherboard_max_memory)
+            except ValueError:
+                motherboard_max_memory = 128
+        if isinstance(motherboard_max_frequency, str):
+            try:
+                motherboard_max_frequency = int(motherboard_max_frequency)
+            except ValueError:
+                motherboard_max_frequency = 4800
+                
         if memory_type and motherboard_memory_support:
             if memory_type not in motherboard_memory_support:
                 issues.append(f"内存不兼容：主板不支持{memory_type}类型的内存")
+                
+        # 检查内存容量是否超过主板最大支持
+        total_memory_capacity = memory_capacity * 2  # 假设双通道
+        if total_memory_capacity > motherboard_max_memory:
+            issues.append(f"内存容量超限：总容量{total_memory_capacity}GB超过主板最大支持{motherboard_max_memory}GB")
+            
+        # 检查内存频率是否超过主板最大支持
+        if memory_frequency > motherboard_max_frequency:
+            warnings.append(f"内存频率较高：内存频率{memory_frequency}MHz超过主板官方支持最高{motherboard_max_frequency}MHz，可能需要超频")
         
         return {
             "compatible": len(issues) == 0,
@@ -328,10 +539,10 @@ def check_compatibility(configuration: dict) -> dict:
             "warnings": []
         }
 
-@mcp.tool()
-def estimate_performance(configuration: dict, scenarios: Optional[list] = None) -> dict:
+
+def _estimate_performance_internal(configuration: dict, scenarios: Optional[list] = None) -> dict:
     """
-    估算配置在不同场景下的性能表现
+    估算配置在不同场景下的性能表现的内部实现函数
     
     Args:
         configuration: 硬件配置字典
@@ -344,36 +555,107 @@ def estimate_performance(configuration: dict, scenarios: Optional[list] = None) 
         scenarios = ["办公软件", "网页浏览", "1080p游戏", "1440p游戏", "4k游戏", "视频编辑"]
     
     try:
-        # 获取配置中的关键硬件
-        # 处理两种可能的数据结构
-        config_data = configuration.get("configuration", {})
-        if not config_data and isinstance(configuration, dict):
-            # 如果configuration就是配置数据本身
-            config_data = configuration
+        # 处理多种可能的数据结构
+        config_data = configuration
         
+        # 如果传入的是包含"configuration"键的字典
+        if isinstance(configuration, dict) and "configuration" in configuration:
+            config_data = configuration["configuration"]
+        # 如果传入的是字符串，尝试解析为JSON
+        elif isinstance(configuration, str):
+            import json
+            try:
+                config_data = json.loads(configuration)
+                # 如果解析后的数据还包含"configuration"键
+                if isinstance(config_data, dict) and "configuration" in config_data:
+                    config_data = config_data["configuration"]
+            except (json.JSONDecodeError, TypeError):
+                return {
+                    "error": "输入参数格式错误：无法解析配置数据",
+                    "performance_scores": {},
+                    "overall_rating": 0
+                }
+        # 如果configuration参数本身就是None
+        elif configuration is None:
+            return {
+                "error": "输入参数为空",
+                "performance_scores": {},
+                "overall_rating": 0
+            }
+        
+        # 确保config_data是字典类型
+        if not isinstance(config_data, dict):
+            return {
+                "error": "输入参数格式错误：配置数据必须是字典类型",
+                "performance_scores": {},
+                "overall_rating": 0
+            }
+        
+        # 获取配置中的关键硬件
         cpu = config_data.get("cpu", {})
         memory = config_data.get("memory", {})
         video_card = config_data.get("video_card", {})
+        
+        # 如果硬件信息是字符串而不是字典，转换为字典格式
+        if isinstance(cpu, str):
+            cpu = {"name": cpu}
+        if isinstance(memory, str):
+            memory = {"name": memory}
+        if isinstance(video_card, str):
+            video_card = {"name": video_card}
         
         # 简化的性能评分系统（实际应用中需要更复杂的算法）
         performance_scores = {}
         
         # 基于CPU核心数和基础频率进行简单评分
         cpu_score = 0
-        cpu_cores = cpu.get("cores", 4)
-        cpu_base_clock = cpu.get("base_clock", 3.0)
+        cpu_cores = cpu.get("cores", 4) if isinstance(cpu, dict) else 4
+        cpu_base_clock = cpu.get("base_clock", 3.0) if isinstance(cpu, dict) else 3.0
+        # 确保是数值类型
+        if isinstance(cpu_cores, str):
+            try:
+                cpu_cores = int(cpu_cores)
+            except ValueError:
+                cpu_cores = 4
+        if isinstance(cpu_base_clock, str):
+            try:
+                cpu_base_clock = float(cpu_base_clock)
+            except ValueError:
+                cpu_base_clock = 3.0
         cpu_score = cpu_cores * cpu_base_clock * 10
         
         # 基于内存容量和频率进行评分
         memory_score = 0
-        memory_capacity = memory.get("capacity", 8)
-        memory_frequency = memory.get("frequency", 3200)
+        memory_capacity = memory.get("capacity", 8) if isinstance(memory, dict) else 8
+        memory_frequency = memory.get("frequency", 3200) if isinstance(memory, dict) else 3200
+        # 确保是数值类型
+        if isinstance(memory_capacity, str):
+            try:
+                memory_capacity = int(memory_capacity)
+            except ValueError:
+                memory_capacity = 8
+        if isinstance(memory_frequency, str):
+            try:
+                memory_frequency = int(memory_frequency)
+            except ValueError:
+                memory_frequency = 3200
         memory_score = (memory_capacity / 8) * (memory_frequency / 3200) * 100
         
         # 基于显卡VRAM和基础频率评分
         gpu_score = 0
-        gpu_vram = video_card.get("vram", 6)
-        gpu_base_clock = video_card.get("base_clock", 1500)
+        gpu_vram = video_card.get("vram", 6) if isinstance(video_card, dict) else 6
+        gpu_base_clock = video_card.get("base_clock", 1500) if isinstance(video_card, dict) else 1500
+        # 确保是数值类型
+        if isinstance(gpu_vram, str):
+            try:
+                gpu_vram = int(gpu_vram)
+            except ValueError:
+                gpu_vram = 6
+        if isinstance(gpu_base_clock, str):
+            try:
+                gpu_base_clock = int(gpu_base_clock)
+            except ValueError:
+                gpu_base_clock = 1500
         gpu_score = (gpu_vram / 6) * (gpu_base_clock / 1500) * 200
         
         # 为每个场景评估性能
@@ -425,6 +707,205 @@ def estimate_performance(configuration: dict, scenarios: Optional[list] = None) 
             "performance_scores": {},
             "overall_rating": 0
         }
+
+
+@mcp.tool(name="check_compatibility")
+def check_compatibility(configuration: dict) -> dict:
+    """
+    检查配置中硬件的兼容性
+    
+    Args:
+        configuration: 硬件配置字典
+        
+    Returns:
+        兼容性检查结果
+    """
+    return _check_compatibility_internal(configuration)
+
+
+# 添加一个新的工具来获取兼容性评分
+@mcp.tool(name="get_compatibility_score")
+def get_compatibility_score(configuration: Optional[dict] = None, cpu: Optional[str] = None, motherboard: Optional[str] = None, 
+                          memory: Optional[str] = None, video_card: Optional[str] = None) -> dict:
+    """
+    获取配置的兼容性评分
+    
+    Args:
+        configuration: 硬件配置字典
+        cpu: CPU名称
+        motherboard: 主板名称
+        memory: 内存名称
+        video_card: 显卡名称
+        
+    Returns:
+        兼容性评分结果
+    """
+    # 处理平铺参数的情况
+    if configuration is None:
+        configuration = {}
+        if cpu:
+            configuration["cpu"] = {"name": cpu}
+        if motherboard:
+            configuration["motherboard"] = {"name": motherboard}
+        if memory:
+            configuration["memory"] = {"name": memory}
+        if video_card:
+            configuration["video_card"] = {"name": video_card}
+    
+    # 使用现有的兼容性检查功能
+    compatibility_result = _check_compatibility_internal(configuration)
+    
+    # 计算兼容性评分（满分100分）
+    if compatibility_result["compatible"]:
+        score = 100 - len(compatibility_result["warnings"]) * 10
+        score = max(0, score)  # 确保不低于0
+    else:
+        score = 0
+    
+    return {
+        "compatibility_score": score,
+        "details": compatibility_result
+    }
+
+
+@mcp.tool(name="check_compatibility_by_json")
+def check_compatibility_by_json(configuration_json: str) -> dict:
+    """
+    通过JSON字符串检查配置兼容性
+    
+    Args:
+        configuration_json: 硬件配置JSON字符串
+        
+    Returns:
+        兼容性检查结果
+    """
+    try:
+        import json
+        configuration = json.loads(configuration_json)
+        return _check_compatibility_internal(configuration)
+    except json.JSONDecodeError as e:
+        return {
+            "compatible": False,
+            "issues": [f"JSON解析错误: {str(e)}"],
+            "warnings": []
+        }
+    except Exception as e:
+        return {
+            "compatible": False,
+            "issues": [f"处理配置时出错: {str(e)}"],
+            "warnings": []
+        }
+
+
+@mcp.tool(name="get_compatibility_score_by_json")
+def get_compatibility_score_by_json(configuration_json: str) -> dict:
+    """
+    通过JSON字符串获取配置的兼容性评分
+    
+    Args:
+        configuration_json: 硬件配置JSON字符串
+        
+    Returns:
+        兼容性评分结果
+    """
+    try:
+        import json
+        configuration = json.loads(configuration_json)
+        # 使用现有的兼容性检查功能
+        compatibility_result = _check_compatibility_internal(configuration)
+        
+        # 计算兼容性评分（满分100分）
+        if compatibility_result["compatible"]:
+            score = 100 - len(compatibility_result["warnings"]) * 10
+            score = max(0, score)  # 确保不低于0
+        else:
+            score = 0
+        
+        return {
+            "compatibility_score": score,
+            "details": compatibility_result
+        }
+    except json.JSONDecodeError as e:
+        return {
+            "compatibility_score": 0,
+            "details": {
+                "compatible": False,
+                "issues": [f"JSON解析错误: {str(e)}"],
+                "warnings": []
+            }
+        }
+    except Exception as e:
+        return {
+            "compatibility_score": 0,
+            "details": {
+                "compatible": False,
+                "issues": [f"处理配置时出错: {str(e)}"],
+                "warnings": []
+            }
+        }
+
+
+@mcp.tool(name="estimate_performance")
+def estimate_performance(configuration: Optional[dict] = None, cpu: Optional[str] = None, gpu: Optional[str] = None, 
+                        memory: Optional[str] = None, motherboard: Optional[str] = None, scenarios: Optional[list] = None) -> dict:
+    """
+    估算配置在不同场景下的性能表现
+    
+    Args:
+        configuration: 硬件配置字典
+        cpu: CPU名称
+        gpu: GPU名称
+        memory: 内存名称
+        motherboard: 主板名称
+        scenarios: 场景列表，默认为常见的使用场景
+        
+    Returns:
+        性能预估结果
+    """
+    # 处理平铺参数的情况
+    if configuration is None:
+        configuration = {}
+        if cpu:
+            configuration["cpu"] = {"name": cpu}
+        if gpu:
+            configuration["video_card"] = {"name": gpu}
+        if memory:
+            configuration["memory"] = {"name": memory}
+        if motherboard:
+            configuration["motherboard"] = {"name": motherboard}
+    
+    return _estimate_performance_internal(configuration, scenarios)
+
+
+@mcp.tool(name="estimate_performance_by_json")
+def estimate_performance_by_json(configuration_json: str, scenarios: Optional[list] = None) -> dict:
+    """
+    通过JSON字符串估算配置在不同场景下的性能表现
+    
+    Args:
+        configuration_json: 硬件配置JSON字符串
+        scenarios: 场景列表，默认为常见的使用场景
+        
+    Returns:
+        性能预估结果
+    """
+    try:
+        import json
+        configuration = json.loads(configuration_json)
+        return _estimate_performance_internal(configuration, scenarios)
+    except json.JSONDecodeError as e:
+        return {
+            "error": f"JSON解析错误: {str(e)}",
+            "performance_scores": {},
+            "overall_rating": 0
+        }
+    except Exception as e:
+        return {
+            "error": f"处理配置时出错: {str(e)}",
+            "performance_scores": {},
+            "overall_rating": 0
+        }
+
 
 def main():
     """启动MCP服务器"""
